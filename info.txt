@@ -1,0 +1,31 @@
+This application retrives actual flight prices and correspnding data from one of the industry recognized flight database Amadeus.
+
+Currently, the following steps were made:
+authentication (initial POST requests for getting authentication information do not look much usual)
+preparing requests
+sending requests 
+getting responses
+parsing response in some form
+integrating it into a basic shiny application
+total travel time calculation was added 2/27
+iata airport codes (non-updating) added 2/27
+issue: bed request 400 error is often since many of the airports are not served with direct passenger connection 
+date input created 2/27
+return date requests experimenting with
+plot added 2/29
+reactive data optimized 3/1 
+
+
+https://developers.amadeus.com/get-started/category?id=80&durl=335&parentId=NaN
+https://developers.amadeus.com/my-apps/First?userId=olympvba@gmail.com
+
+GET https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=MUC
+====
+```{r}
+for (i in seq(from = 53387, to = 55451, by =100 )){
+str=  paste("https://info.midpass.ru/svc/pi/app_last/12102/000",as.character(i), sep = "")
+#print(str)
+y <- fromJSON(str)
+print(paste(i, y$originalApplicationInfo$statusPercent,y$originalApplicationInfo$applicationDate))
+}
+```
