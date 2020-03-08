@@ -27,6 +27,11 @@ User Interface
 
 The application has two panels, the left panel and the main panel. On the left panel, there are several controls that allow user input. User can choose departure airport, arrival airport, and departure date. After data input, user can press "Update view" button for the data to passed to the server and then the reponse recived. The reponse is shown in the main panel. The main panel has several tabs. The first tab present all the offers found on Amadeus for given departure and destination airports for selected date. Teh table has three columns including offer price, transit airports for each iterinary, and total time of travel. Total travel time is a difference between the scheduled departure time of the initial leg and scheduled arrival time of the final leg of the trip. There is also a tab showing price distribution as a function of total flight time as a plot.
 
+Prototyping. Testing. Deployment
+
+Initial prototype is available at https://sta141b.shinyapps.io/FinalPro/
+Project deliverables include source code repository, documentation, and working copies of the application available on the web. The copies of the application have to be deployed on shinyapps.io as per the requirements. Due to the limitations of Amadeus test API and other resources, testing of the application is limited to ad-hoc method. Each team member is supposed to deploy their own copy of the application.  
+
 Flight Booking API Documentation
 https://developers.amadeus.com/get-started/category?id=80&durl=335&parentId=NaN
 
