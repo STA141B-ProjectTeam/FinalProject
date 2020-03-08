@@ -1,8 +1,8 @@
 ---
 output:
+  html_document: default
   pdf_document: default
   word_document: default
-  html_document: default
 ---
 <html>
 
@@ -29,6 +29,7 @@ Initial Stage of The Project.
 Development</h2>
 
 At the initial development phase, the structure of data has to be explored. Introductory project stage uses a single API named "Flight Low-fare Search". The structure and the syntax of the requests to this API are described further below (see Authorization). The reponse in a form of JSON includes a set of available offers. "Offers" object consists of a set of inidvidual offers. Each offer has unique information identifying this offer, as well as the information that is essential for customers. These information includes (but not limited to) prices, flight segments, arrival and departe times for each segment, arrival and departure airports for each segments, airport terminal for each airport. For two-way offers, there are two segement sets for each offer.
+<p>At the introductory stage, taking into account different attitudes and paces of the project team members, it was decided to create several dedicated tabs within the main pane. Team members have their own place for presenting their work there.
 
 <h2>Airport Codes and Names</h2>
 
@@ -42,22 +43,13 @@ Thier API uses two-step authorization. At the first step, access token is obtain
 The application has two panels, the left panel and the main panel. On the left panel, there are several controls that allow user input. User can choose departure airport, arrival airport, and departure date. After data input, user can press "Update view" button for the data to passed to the server and then the reponse recived. The reponse is shown in the main panel. The main panel has several tabs. The first tab present all the offers found on Amadeus for given departure and destination airports for selected date. Teh table has three columns including offer price, transit airports for each iterinary, and total time of travel. Total travel time is a difference between the scheduled departure time of the initial leg and scheduled arrival time of the final leg of the trip. There is also a tab showing price distribution as a function of total flight time as a plot.
 <p>
 ![alt text here](p1.jpg)
-</p><p>
-=================================
-<p>
+</p>
 
-<p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p>
- You can embed an R code chunk like this:</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p><p>.</p>
+<h2>Prototyping. Testing. Deployment.</h2>
 
-<!--begin.rcode
-summary(cars)
-end.rcode-->
+<p>Initial prototype is available at https://sta141b.shinyapps.io/FinalPro/
+<p>Project deliverables include source code repository, documentation, and working copies of the application available on the web. The copies of the application have to be deployed on shinyapps.io as per the requirements. Due to the limitations of Amadeus test API and other resources, testing of the application is limited to ad-hoc method. Each team member is supposed to deploy their own copy of the application.  
 
-<p>You can also embed plots, for example:</p>
-
-<!--begin.rcode fig.width=7, fig.height=6
-plot(cars)
-end.rcode-->
-
+---end---
 </body>
 </html>
