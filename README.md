@@ -2,6 +2,19 @@
 
 This application retrives actual flight prices and corresponding data from one of the industry recognized flight database Amadeus.
 
+Amadeus API
+
+Amadeus provides well-developed API for quering data using https protocol with standard http methods GET and POST. (For working with orders, DELETE method is also used.) If request is successful and response status is 200, the body of response is a JSON object. There are numerous available Amadeus API's providing a veriety of possibilities for searching all kinds of travel offers, creating orders, managing orders and more.
+
+Project Objectives and Scope
+
+This project is a deveopment project targeted on creation of web application that allows users (end users and/or agencies) serach offers, browse special offers, create orders, place orders, manipulate orders, make payments, trace statuses, and perfor other related activities.
+
+Initial Stage of The Project 
+Development
+
+At the initial development phase, the structure of data has to be explored. Introductory project stage uses a single API named "Flight Low-fare Search". The structure and the syntax of the requests to this API are described further below. The reponse in a form of JSON includes a set of available offers. "Offers" object consists of a set of inidvidual offers. Each offer has unique information identifying this offer, as well as the information that is essential for customers. These information includes (but not limited to) prices, flight segments, arrival and departe times for each segment, arrival and departure airports for each segments, airport terminal for each airport. For two-way offers, there are two segement sets for each offer.
+
 Airport Codes and Names
 
 Airport IATA three letter codes are stored in a file. Ideally, the codes should be received from Amadeus. This functionality is in the project scope, but currently it is not implemented. 
