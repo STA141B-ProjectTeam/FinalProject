@@ -7,7 +7,7 @@ output:
 <html>
 
 <head>
-<title>Flight Prices</title>
+<title>Flight Project</title>
 </head>
 
 <body>
