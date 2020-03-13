@@ -7,40 +7,52 @@ library(shinyjs)
 #library(stringr)
 library(httr)
 
-#d=c("NYC","LGA")
-airport_codes <- read_csv("airport-codes1.csv")
-d=airport_codes$code
-#o=c("SMF","SFO","LAX")
-o=d
 
+#
+# Airport Data
+#
+
+airport_codes <- read_csv("airport-codes1.csv")
+d <- airport_codes$code # destination codes
+o <- d                  # origin codes will need the same list   
+
+#
+# App Body
+#
 ui <- fluidPage(
   useShinyjs(),  # Set up shinyjs
+  
+  #
+  # Title Panel  
   titlePanel("Final Project"),
   
+  #
+  # Main Page SideBar: Flight Selection
   sidebarLayout(
     sidebarPanel( p("To get actual flight prices, please, choose departure and arrival airports."),
                   selectInput("origin", "Origin:", o, selected = "JFK"), 
                   selectInput("dest", "Destination:", d, selected = "SFO"),
                   dateInput("date1", "Departure Date:", value = "2020-04-29"),
-                  dateInput("date2", "Return Date:", value = "2020-05-29"),
+                  dateInput("date2", "Return Date:", value = "2020-05-29"),      # For round trip implementation
                   
                   submitButton("Update View", icon("refresh")),
-                  
                   checkboxInput("return", "Check if one-way", TRUE),
     ), #sidebarPanel
     
-    
+    #
+    # Main Page Body: Flight Results 
     mainPanel(
       p("Here you can see actual prices for your origin and destination for selected dates"),
       textOutput("text"),
       textOutput("text1"),
       
-      # tableOutput("table"),
-      #  plotOutput("plot", inline = FALSE),
+      #
+      # Tab Conditions: Name and Content for each tab
+      #    See TAB CONTENT below, we're plucking those output variables and using them here. 
       tabsetPanel(
-        tabPanel("Table (1)", tableOutput("table")),
-        tabPanel("Plot (1)", plotOutput("plot")),
-        tabPanel("(2)",plotOutput("user2")) ,
+        tabPanel("Results Table", tableOutput("table")),
+        tabPanel("Flight Time v Price", plotOutput("plot")),
+        tabPanel("Price Distribution",plotOutput("user2")) ,
         tabPanel("(3)",textOutput("user3")),
         tabPanel("(4)",textOutput("user4"))
         
@@ -50,19 +62,33 @@ ui <- fluidPage(
 ) #fluidPage
 
 
-#do you want to use online Amadeus data or just stored data dA.Rdata from earlier request?
-#set requestAmadeus to FALSE if you want to requests to Amadeus (for testing purposes)
-#set requestAmadeus to TRUE for online requests
+#
+# Data Access
+#
 
-load(file = "dA.Rdata")
-requestAmadeus <- FALSE
+#SETUP README: Do you want to use online Amadeus data or just stored data dA.Rdata from earlier request?
+#    set requestAmadeus to FALSE if you want to requests to Amadeus (for testing purposes)
+#    set requestAmadeus to TRUE for online requests
+
+load(file = "dA.Rdata")  # if request False, local data (static table)
+requestAmadeus <- FALSE   
+
+
+#
+# Data Retrieval and Variable Assignment
+#
 
 server <- function(input, output) {
   
-  fromTo <- reactive({c(input$origin,input$dest)})
-  dates<- reactive({c(input$date1,input$date2)})
   
-  #checking if accessing Amadeus is required and preparing data 
+  #
+  # User Inputs Setup: 
+  fromTo <- reactive({c(input$origin, input$dest)}) # Origin and Destinations
+  dates<- reactive({c(input$date1, input$date2)})   # One-way and roundtrip dates
+  
+  
+  #
+  # Checking if accessing Amadeus is required and preparing data 
   #if(is.null(dA) | requestAmadeus ){
   if(requestAmadeus ){
     dataAmadeus <-reactive({ doit(input$origin,input$dest,input$date1)})
@@ -71,26 +97,35 @@ server <- function(input, output) {
     #save(dA, file = "dA.Rdata")
   }
   
+  # 
+  # If one-way flight gray out return date
   observeEvent(input$return, {
     toggleState("date2")
   })
-  #doit function
-  #establishing connection, getting response, parsing response 
-  doit=function (origin, destination, date) {
-    #requesting access token
+  
+  
+  #
+  # API Call 
+  #
+  
+  #
+  # Establishing connection, getting response, parsing response 
+  doit<- function (origin, destination, date) {
+    
+    # Requesting access token
     headers = c('Content-Type' = 'application/x-www-form-urlencoded')
     res <- httr::POST(url = 'https://test.api.amadeus.com/v1/security/oauth2/token', httr::add_headers(.headers=headers), body = upload_file("1.cred"))
     json <- content(res, as = "text")
     tkn<-fromJSON(json)$access_token
     
-    #creating data request
+    # Creating data request
     # req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",input$origin,"&destination=",input$dest,"&departureDate=",input$date1, sep = "")
     req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",origin,"&destination=",destination,"&departureDate=",date, sep = "")
     
-    #getting chipest date       
+    # Get cheapest date       
     #req="https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=MUC"
     
-    #requesting data
+    # Requesting data
     rr <- GET(req,
               add_headers(Authorization = paste("Bearer ", tkn))
     )
@@ -99,13 +134,15 @@ server <- function(input, output) {
     x<-  fromJSON(json) #x1=x$data$offerItems[1];y=as.data.frame(x1)
     
     #-------------------
-    #extracting data from responce into resdf dataframe
-    #creating initial dataframe
+    
+    # Extracting data from response into resdf dataframe
+    # Creating initial dataframe
     resdf<- data.frame("price"=.0, "via"="", "totaltime"="", stringsAsFactors=FALSE) 
     
     length(x$data$offerItems)
     for (k in 1:length(x$data$offerItems)) {
-      #extgracting data from all of the offers  
+      
+      #extracting data from all of the offers  
       xx=x$data$offerItems[k]
       xx=as.data.frame(xx)
       price=xx$price$total
@@ -132,6 +169,10 @@ server <- function(input, output) {
     
   } # end of doit()
   
+  #
+  # Data Outputs
+  #
+  
   # output$text<-renderText(paste("From ",input$origin," to",input$dest,unlist(doit(input$origin,input$dest))))
   output$text<-renderText(paste("From ",input$origin," to",input$dest, "on the date of ", dates()[1] ))
   output$text1 <- renderText({if(!input$return)"not implemented"})
@@ -141,19 +182,39 @@ server <- function(input, output) {
   # t$price
   # output$table <- renderTable(t)
   
-  if(requestAmadeus)output$table <- renderTable(dataAmadeus())
-  else output$table <- renderTable(dA)
+#
+# Tab Content 
+#
+  
+#======= Main Tab - TABLE ================
+  
+  if(requestAmadeus) # Where is your data from? Return respective table
+    output$table <- renderTable(dataAmadeus())
+  else 
+    output$table <- renderTable(dA)
+  
+#======= Histogram ================
+
   output$plot <- renderPlot({
     #--  t=doit(input$origin,input$dest,input$date1)
     #qplot(y=t$price,x=as.numeric(hm(t$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
-    if (requestAmadeus)qplot(y=dataAmadeus()$price,x=as.numeric(hm(dataAmadeus()$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
-    else qplot(y=dA$price,x=as.numeric(hm(dA$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
+    if (requestAmadeus)
+      qplot(y=dataAmadeus()$price,
+            x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
+            xlab ="flight time (hours)", ylab = "price")
+    else 
+      qplot(y=dA$price,
+             x=as.numeric(hm(dA$totaltime))/3600,
+             xlab ="flight time (hours)", ylab = "price")
     
   }) #renderPlot
   
-  #======= user 2 ================
+  #======= Histogram ================
   output$user2 <- renderPlot({
-    if (requestAmadeus)hist(dataAmadeus()$price)else hist(dA$price,xlab = "Price",ylab="Frequency")  
+    if (requestAmadeus)
+      hist(dataAmadeus()$price)
+    else 
+      hist(dA$price,xlab = "Price",ylab="Frequency")  
   }) #renderPlot
   
   #======= user 3 ================
@@ -163,6 +224,7 @@ server <- function(input, output) {
   output$user4 <- renderText({"user 4's work"})
 } #server
 
+#
 # Run the application 
 shinyApp(ui = ui, server = server)
 
