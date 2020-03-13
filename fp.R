@@ -39,8 +39,8 @@ ui <- fluidPage(
       #  plotOutput("plot", inline = FALSE),
       tabsetPanel(
         tabPanel("Table (1)", tableOutput("table")),
-        tabPanel("Plot (1)", plotOutput("plot"))
-        , tabPanel("(2)",textOutput("user2")) ,
+        tabPanel("Plot (1)", plotOutput("plot")),
+        tabPanel("(2)",plotOutput("user2")) ,
         tabPanel("(3)",textOutput("user3")),
         tabPanel("(4)",textOutput("user4"))
         
@@ -152,7 +152,9 @@ server <- function(input, output) {
   }) #renderPlot
   
   #======= user 2 ================
-  output$user2 <- renderText({"user 2's work"})
+  output$user2 <- renderPlot({
+    if (requestAmadeus)hist(dataAmadeus()$price)else hist(dA$price,xlab = "Price",ylab="Frequency")  
+  }) #renderPlot
   
   #======= user 3 ================
   output$user3 <- renderText({"user 3's work"})
