@@ -51,8 +51,8 @@ ui <- fluidPage(
       #    See TAB CONTENT below, we're plucking those output variables and using them here. 
       tabsetPanel(
         tabPanel("Results Table", tableOutput("table")),
-        tabPanel("Flight Time v Price", plotOutput("plot")),
-        tabPanel("Price Distribution",plotOutput("user2")) ,
+        tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot")),
+        tabPanel("Price Distribution",plotOutput("priceHistoPlot")) ,
         tabPanel("(3)",textOutput("user3")),
         tabPanel("(4)",textOutput("user4"))
         
@@ -160,7 +160,7 @@ server <- function(input, output) {
       
       via=paste(departs,collapse=" ")
       resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
-      responce=paste("Travel via",via,"      Price is",price) 
+      response=paste("Travel via",via,"      Price is",price) 
     }
     resdf<-resdf[-1,]
     ordered <- resdf[order(resdf$price),]
@@ -193,9 +193,9 @@ server <- function(input, output) {
   else 
     output$table <- renderTable(dA)
   
-#======= Histogram ================
+#======= Scatter Plot ================
 
-  output$plot <- renderPlot({
+  output$flightPriceScatterPlot <- renderPlot({
     #--  t=doit(input$origin,input$dest,input$date1)
     #qplot(y=t$price,x=as.numeric(hm(t$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
     if (requestAmadeus)
@@ -209,20 +209,22 @@ server <- function(input, output) {
     
   }) #renderPlot
   
-  #======= Histogram ================
-  output$user2 <- renderPlot({
+#======= Histogram ================
+  
+  output$priceHistoPlot <- renderPlot({
     if (requestAmadeus)
       hist(dataAmadeus()$price)
     else 
       hist(dA$price,xlab = "Price",ylab="Frequency")  
   }) #renderPlot
   
-  #======= user 3 ================
+#======= user 3 ================
   output$user3 <- renderText({"user 3's work"})
   
-  #======= user 4 ================
+#======= user 4 ================
   output$user4 <- renderText({"user 4's work"})
 } #server
+
 
 #
 # Run the application 
