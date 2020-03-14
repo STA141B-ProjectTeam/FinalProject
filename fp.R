@@ -3,10 +3,10 @@ library(tidyverse)
 library(lubridate)
 library(jsonlite)
 library(shinyjs)
-#library(readr)
-#library(stringr)
+library(readr)
+library(stringr)
 library(httr)
-
+library(ggplot2)
 
 #
 # Airport Data
@@ -51,15 +51,18 @@ ui <- fluidPage(
       #    See TAB CONTENT below, we're plucking those output variables and using them here. 
       tabsetPanel(
         tabPanel("Results Table", tableOutput("table")),
-        tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot")),
-        tabPanel("Price Distribution",plotOutput("priceHistoPlot")) ,
+        tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
+        tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
         tabPanel("(3)",textOutput("user3")),
         tabPanel("(4)",textOutput("user4"))
+        
+        
         
       ) #tabsetPanel
     ) #mainPanel
   ) #sidebarLayout
 ) #fluidPage
+
 
 
 #
@@ -71,7 +74,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- FALSE   
+requestAmadeus <- FALSE
 
 
 #
@@ -201,13 +204,23 @@ server <- function(input, output) {
     if (requestAmadeus)
       qplot(y=dataAmadeus()$price,
             x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
-            xlab ="flight time (hours)", ylab = "price")
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200)) + 
+            theme_minimal() +
+            geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
+            geom_smooth(method=lm,se=FALSE)
     else 
       qplot(y=dA$price,
-             x=as.numeric(hm(dA$totaltime))/3600,
-             xlab ="flight time (hours)", ylab = "price")
+            x=as.numeric(hm(dA$totaltime))/3600,
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200))+ 
+            theme_minimal() +
+            geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
+            geom_smooth(method=lm,se=FALSE)
+    
     
   }) #renderPlot
+  
+#=====Scatter Plot Summary Statistics=======
+  
   
 #======= Histogram ================
   
@@ -215,8 +228,15 @@ server <- function(input, output) {
     if (requestAmadeus)
       hist(dataAmadeus()$price)
     else 
-      hist(dA$price,xlab = "Price",ylab="Frequency")  
+      hist(dA$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
+           breaks = 500,xlim = c(120,185),ylim =c(0,20))  
   }) #renderPlot
+  
+#=====Histogram Summary Statistics=======
+  output$summaryTWO<-renderPrint({
+    summary(dA$price)
+  })
+
   
 #======= user 3 ================
   output$user3 <- renderText({"user 3's work"})
