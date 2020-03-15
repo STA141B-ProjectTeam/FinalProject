@@ -219,7 +219,7 @@ server <- function(input, output) {
     
   }) #renderPlot
   
-#=====Scatter Plot Summary Statistics======
+#=====Scatter Plot Summary Statistics===
   
   
 #======= Histogram ================
