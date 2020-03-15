@@ -226,10 +226,11 @@ server <- function(input, output) {
   
   output$priceHistoPlot <- renderPlot({
     if (requestAmadeus)
-      hist(dataAmadeus()$price)
+      hist(dataAmadeus()$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
+           breaks = 100,ylim =c(0,20))
     else 
       hist(dA$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
-           breaks = 500,ylim =c(0,20))  
+           breaks = 100,ylim =c(0,20))  
   }) #renderPlot
   
 #=====Histogram Summary Statistics=======
