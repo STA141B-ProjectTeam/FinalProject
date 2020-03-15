@@ -235,6 +235,9 @@ server <- function(input, output) {
   
 #=====Histogram Summary Statistics=======
   output$summaryTWO<-renderPrint({
+    if(requestAmadeus)
+    summary(dataAmadeus()$price)
+    else
     summary(dA$price)
   })
 
