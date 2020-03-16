@@ -74,7 +74,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- FALSE
+requestAmadeus <- TRUE
 
 
 #
@@ -161,7 +161,7 @@ server <- function(input, output) {
       travel_time=word(travel_time, 1, 2)
       
       
-      via=paste(departs,collapse=" ")
+      via=paste(departs[-1],collapse=" ")
       resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
       response=paste("Travel via",via,"      Price is",price) 
     }
