@@ -7,6 +7,7 @@ library(readr)
 library(stringr)
 library(httr)
 library(ggplot2)
+library(leaflet)
 
 #
 # Airport Data
@@ -53,7 +54,7 @@ ui <- fluidPage(
         tabPanel("Results Table", tableOutput("table")),
         tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
         tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
-        tabPanel("(3)",textOutput("user3")),
+        tabPanel("Map of Airports",leafletOutput("Map")),
         tabPanel("(4)",textOutput("user4"))
         
         
@@ -226,20 +227,34 @@ server <- function(input, output) {
   
   output$priceHistoPlot <- renderPlot({
     if (requestAmadeus)
-      hist(dataAmadeus()$price)
+      hist(dataAmadeus()$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
+           breaks = 100,ylim =c(0,20))
     else 
       hist(dA$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
-           breaks = 500,xlim = c(120,185),ylim =c(0,20))  
+           breaks = 500,ylim =c(0,20))  
   }) #renderPlot
   
   #=====Histogram Summary Statistics=======
+  
   output$summaryTWO<-renderPrint({
-    summary(dA$price)
+    if(requestAmadeus)
+      summary(dataAmadeus()$price)
+    else
+      summary(dA$price)
   })
   
   
-  #======= user 3 ================
-  output$user3 <- renderText({"user 3's work"})
+  #======= Map of Airports ================
+  
+  Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
+  output$Map <- renderLeaflet({
+    if (requestAmadeus)
+      leaflet(data = Longitude_Latitude[1:100,]) %>% addTiles() %>%
+      addMarkers(~Longitude, ~Latitude,popup = ~as.character(code), label = ~as.character(Location))
+    else 
+      leaflet(data = Longitude_Latitude[1:100,]) %>% addTiles() %>%
+      addMarkers(~Longitude, ~Latitude,popup = ~as.character(code), label = ~as.character(Location))
+  }) 
   
   #======= user 4 ================
   output$user4 <- renderText({"user 4's work"})
