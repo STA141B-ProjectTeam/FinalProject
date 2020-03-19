@@ -55,7 +55,7 @@ ui <- fluidPage(
         tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
         tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
         tabPanel("Map of Airports",leafletOutput("Map")),
-        tabPanel("Best Price",tableOutput("offers"))
+        tabPanel("Best Price",column(3,tableOutput("offersprice")),column(6, tableOutput("offerstime")))
         
         
         
@@ -274,11 +274,17 @@ server <- function(input, output) {
     dA %>% filter(totaltime == min(dA$totaltime))
   })
   
-  output$offers <- renderTable({
+  output$offersprice <- renderTable({
     if (requestAmadeus)
       minprice1()
     else 
       minprice2()
+  })
+  output$offerstime <- renderTable({
+    if (requestAmadeus)
+      mintime1()
+    else 
+      mintime2()
   })
 } #server
 
