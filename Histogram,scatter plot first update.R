@@ -245,16 +245,20 @@ server <- function(input, output) {
   
   
   #======= Map of Airports ================
-  
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
-    if (requestAmadeus)
-      leaflet(data = Longitude_Latitude[1:100,]) %>% addTiles() %>%
-      addMarkers(~Longitude, ~Latitude,popup = ~as.character(code), label = ~as.character(Location))
-    else 
-      leaflet(data = Longitude_Latitude[1:100,]) %>% addTiles() %>%
-      addMarkers(~Longitude, ~Latitude,popup = ~as.character(code), label = ~as.character(Location))
-  }) 
+    if(requestAmadeus)
+      leaflet() %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap,
+                       options = providerTileOptions(noWrap = TRUE))%>%
+      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location))
+    else
+      leaflet() %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap,
+                       options = providerTileOptions(noWrap = TRUE)) %>%
+      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location)) 
+    
+  })
   
   #======= user 4 ================
   output$user4 <- renderText({"user 4's work"})
