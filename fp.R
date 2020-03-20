@@ -8,7 +8,6 @@ library(stringr)
 library(httr)
 library(ggplot2)
 library(leaflet)
-library(magrittr)
 
 #
 # Airport Data
@@ -293,6 +292,7 @@ server <- function(input, output) {
   
   output$maxtime <- renderTable({
     time() %>%
+      filter(price == min(price)) %>%
       filter(Time == max(Time)) %>%
       select(price, via, totaltime)
   },
