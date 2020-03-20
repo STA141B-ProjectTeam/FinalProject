@@ -75,7 +75,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- TRUE
+requestAmadeus <- FALSE
 
 
 #
@@ -284,6 +284,7 @@ server <- function(input, output) {
   
   output$mintime <- renderTable({
     time() %>%
+      filter(price == min(price)) %>%
       filter(Time == min(Time)) %>%
       select(price, via, totaltime)
   },
