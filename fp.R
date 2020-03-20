@@ -7,6 +7,8 @@ library(readr)
 library(stringr)
 library(httr)
 library(ggplot2)
+library(leaflet)
+library(magrittr)
 
 #
 # Airport Data
@@ -53,8 +55,8 @@ ui <- fluidPage(
         tabPanel("Results Table", tableOutput("table")),
         tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
         tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
-        tabPanel("(3)",textOutput("user3")),
-        tabPanel("(4)",textOutput("user4"))
+        tabPanel("Map of Airports",leafletOutput("Map")),
+        tabPanel("Best Offers",column(4,tableOutput("offersprice")),column(6, tableOutput("mintime"), tableOutput("maxtime")))
         
         
         
@@ -161,7 +163,7 @@ server <- function(input, output) {
       travel_time=word(travel_time, 1, 2)
       
       
-      via=paste(departs[-1],collapse=" ")
+      via=paste(departs,collapse=" ")
       resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
       response=paste("Travel via",via,"      Price is",price) 
     }
@@ -185,44 +187,44 @@ server <- function(input, output) {
   # t$price
   # output$table <- renderTable(t)
   
-#
-# Tab Content 
-#
+  #
+  # Tab Content 
+  #
   
-#======= Main Tab - TABLE ================
+  #======= Main Tab - TABLE ================
   
   if(requestAmadeus) # Where is your data from? Return respective table
     output$table <- renderTable(dataAmadeus())
   else 
     output$table <- renderTable(dA)
   
-#======= Scatter Plot ================
-
+  #======= Scatter Plot ================
+  
   output$flightPriceScatterPlot <- renderPlot({
     #--  t=doit(input$origin,input$dest,input$date1)
     #qplot(y=t$price,x=as.numeric(hm(t$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
     if (requestAmadeus)
       qplot(y=dataAmadeus()$price,
             x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
-            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price") + 
-            theme_minimal() +
-            geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
-            geom_smooth(method=lm,se=FALSE)
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200)) + 
+      theme_minimal() +
+      geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
+      geom_smooth(method=lm,se=FALSE)
     else 
       qplot(y=dA$price,
             x=as.numeric(hm(dA$totaltime))/3600,
-            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price")+ 
-            theme_minimal() +
-            geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
-            geom_smooth(method=lm,se=FALSE)
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200))+ 
+      theme_minimal() +
+      geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
+      geom_smooth(method=lm,se=FALSE)
     
     
   }) #renderPlot
   
-#=====Scatter Plot Summary Statistics===
+  #=====Scatter Plot Summary Statistics======
   
   
-#======= Histogram ================
+  #======= Histogram ================
   
   output$priceHistoPlot <- renderPlot({
     if (requestAmadeus)
@@ -230,27 +232,75 @@ server <- function(input, output) {
            breaks = 100,ylim =c(0,20))
     else 
       hist(dA$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
-           breaks = 100,ylim =c(0,20))  
+           breaks = 500,ylim =c(0,20))  
   }) #renderPlot
   
-#=====Histogram Summary Statistics=======
+  #=====Histogram Summary Statistics=======
+  
   output$summaryTWO<-renderPrint({
     if(requestAmadeus)
-    summary(dataAmadeus()$price)
+      summary(dataAmadeus()$price)
     else
-    summary(dA$price)
+      summary(dA$price)
   })
-
   
-#======= user 3 ================
-  output$user3 <- renderText({"user 3's work"})
   
-#======= user 4 ================
-  output$user4 <- renderText({"user 4's work"})
+  #======= Map of Airports ================
+  Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
+  output$Map <- renderLeaflet({
+    if(requestAmadeus)
+      leaflet() %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap,
+                       options = providerTileOptions(noWrap = TRUE))%>%
+      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location))
+    else
+      leaflet() %>%
+      addProviderTiles(providers$Esri.NatGeoWorldMap,
+                       options = providerTileOptions(noWrap = TRUE)) %>%
+      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location)) 
+    
+  })
+  
+  #======= Best Offer ================
+  minprice <- reactive({
+    if (requestAmadeus)
+      dataAmadeus() %>% filter(price == min(dataAmadeus()$price))
+    else
+      dA %>% filter(price == min(dA$price))
+  })
+  time <- reactive({
+    if (requestAmadeus)
+      dataAmadeus() %>% 
+        mutate(Time = as.numeric(hm(dataAmadeus()$totaltime))/3600)
+    else
+      dA %>% 
+        mutate(Time = as.numeric(hm(dA$totaltime))/3600)
+  })
+  
+  output$offersprice <- renderTable(
+    {minprice()},
+    caption = "The cheapest tickets available:",
+    caption.placement = getOption("xtable.caption.placement", "top")
+  )
+  
+  output$mintime <- renderTable({
+    time() %>%
+      filter(Time == min(Time)) %>%
+      select(price, via, totaltime)
+  },
+  caption = "The best estimated flight time:",
+  caption.placement = getOption("xtable.caption.placement", "top"))
+  
+  output$maxtime <- renderTable({
+    time() %>%
+      filter(Time == max(Time)) %>%
+      select(price, via, totaltime)
+  },
+  caption = "The slowest estimated flight time:",
+  caption.placement = getOption("xtable.caption.placement", "top"))
 } #server
 
 
 #
 # Run the application 
 shinyApp(ui = ui, server = server)
-
