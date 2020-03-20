@@ -189,21 +189,22 @@ server <- function(input, output) {
     }else{
       data <- x$data$"0"$offerItems$"0"
       length(data)
-      for (k in 1:length(data)){
+      for (i in 1:length(x$data$offerItems)) {
         
-      #extracting data from all matching flights  
-        xx=as.data.frame(x$data$"0"$offerItems$"0"[k])
+        #extracting data from all matching flights  
+        xx=as.data.frame(x$data$offerItems[i])
         price=xx$price$total
         
-        departs <- paste("[",xx$services$"0"$segments$"0"$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-        arrives <- paste("[",xx$services$"0"$segments$"0"$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-
-        departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(
-                        xx$services)$"0")$segments)$"0")$flightSegment)$departure)$at
-        arrives_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(
-                        xx$services)$"0")$segments)$"0")$flightSegment)$arrival)$at
+        for (j in 0:1)
+          departs <- paste("[",xx$services[j]$segments$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
+          arrives <- paste("[",xx$services[j]$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
         
-        # TODO add return trip
+        
+        #departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
+        #arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
+        
+        departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
+        arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
         
         # Roundtrip calculations
         #   total travel time calculation
@@ -292,6 +293,8 @@ server <- function(input, output) {
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
     if(requestAmadeus)
+      
+      
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap =TRUE))%>%
@@ -314,11 +317,11 @@ server <- function(input, output) {
   })
   time <- reactive({
     if (requestAmadeus)
-      dataAmadeus() %>% 
-        mutate(Time = as.numeric(hm(dataAmadeus()$totaltime))/3600)
+      dataAmadeus() %>%
+         mutate(Time = as.numeric(duration(dataAmadeus()$totaltime)))
     else
       dA %>% 
-        mutate(Time = as.numeric(hm(dA$totaltime))/3600)
+        mutate(Time = as.numeric(duration(dA$totaltime)))
   })
   
   output$offersprice <- renderTable(
@@ -329,6 +332,7 @@ server <- function(input, output) {
   
   output$mintime <- renderTable({
     time() %>%
+      filter(price == min(price)) %>%
       filter(Time == min(Time)) %>%
       select(price, via, totaltime)
   },
@@ -337,6 +341,7 @@ server <- function(input, output) {
   
   output$maxtime <- renderTable({
     time() %>%
+      filter(price == min(price)) %>%
       filter(Time == max(Time)) %>%
       select(price, via, totaltime)
   },
