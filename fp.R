@@ -76,7 +76,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- TRUE
+requestAmadeus <- FALSE
 
 
 #
@@ -288,7 +288,7 @@ server <- function(input, output) {
       filter(Time == min(Time)) %>%
       select(price, via, totaltime)
   },
-  caption = "The best estimated flight time:",
+  caption = "The fastest flight time:",
   caption.placement = getOption("xtable.caption.placement", "top"))
   
   output$maxtime <- renderTable({
@@ -296,7 +296,7 @@ server <- function(input, output) {
       filter(Time == max(Time)) %>%
       select(price, via, totaltime)
   },
-  caption = "The slowest estimated flight time:",
+  caption = "The maximum flight time:",
   caption.placement = getOption("xtable.caption.placement", "top"))
 } #server
 
