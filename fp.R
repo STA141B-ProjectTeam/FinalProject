@@ -247,7 +247,6 @@ server <- function(input, output) {
   #======= Map of Airports ================
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
-
     if(requestAmadeus)
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
