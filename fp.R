@@ -247,16 +247,18 @@ server <- function(input, output) {
   #======= Map of Airports ================
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
+    loc <- Longitude_Latitude %>%
+      filter(code == input$origin | code == input$dest)
     if(requestAmadeus)
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap = TRUE))%>%
-      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location))
+      addMarkers(data = loc, label = ~as.character(code), popup = ~as.character(Location))
     else
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap = TRUE)) %>%
-      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location)) 
+      addMarkers(data = loc, label = ~as.character(code), popup = ~as.character(Location))
     
   })
   
