@@ -269,11 +269,12 @@ server <- function(input, output) {
   })
   time <- reactive({
     if (requestAmadeus)
-      dataAmadeus() %>% 
-        mutate(Time = as.numeric(hm(dataAmadeus()$totaltime))/3600)
+      dataAmadeus() %>%
+          mutate(Time = as.numeric(duration(dataAmadeus()$totaltime)))
     else
       dA %>% 
-        mutate(Time = as.numeric(hm(dA$totaltime))/3600)
+        mutate(Time = as.numeric(duration(dA$totaltime)))
+
   })
   
   output$offersprice <- renderTable(
