@@ -8,6 +8,7 @@ library(stringr)
 library(httr)
 library(ggplot2)
 library(leaflet)
+library(magrittr)
 
 #
 # Airport Data
@@ -55,7 +56,7 @@ ui <- fluidPage(
         tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
         tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
         tabPanel("Map of Airports",leafletOutput("Map")),
-        tabPanel("Best Price",column(3,tableOutput("offersprice")),column(6, tableOutput("offerstime")))
+        tabPanel("Best Offers",column(4,tableOutput("offersprice")),column(6, tableOutput("mintime"), tableOutput("maxtime")))
         
         
         
@@ -75,7 +76,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- FALSE
+requestAmadeus <- TRUE
 
 
 #
@@ -261,31 +262,42 @@ server <- function(input, output) {
   })
   
   #======= Best Offer ================
-  minprice1 <- reactive({
-    dataAmadeus() %>% filter(price == min(dataAmadeus()$price))
+  minprice <- reactive({
+    if (requestAmadeus)
+      dataAmadeus() %>% filter(price == min(dataAmadeus()$price))
+    else
+      dA %>% filter(price == min(dA$price))
   })
-  minprice2 <- reactive({
-    dA %>% filter(price == min(dA$price))
-  })
-  mintime1 <- reactive({
-    dataAmadeus() %>% filter(totaltime == min(dataAmadeus()$totaltime))
-  })
-  mintime2 <- reactive({
-    dA %>% filter(totaltime == min(dA$totaltime))
+  time <- reactive({
+    if (requestAmadeus)
+      dataAmadeus() %>% 
+        mutate(Time = as.numeric(hm(dataAmadeus()$totaltime))/3600)
+    else
+      dA %>% 
+        mutate(Time = as.numeric(hm(dA$totaltime))/3600)
   })
   
-  output$offersprice <- renderTable({
-    if (requestAmadeus)
-      minprice1()
-    else 
-      minprice2()
-  })
-  output$offerstime <- renderTable({
-    if (requestAmadeus)
-      mintime1()
-    else 
-      mintime2()
-  })
+  output$offersprice <- renderTable(
+    {minprice()},
+    caption = "The cheapest tickets available:",
+    caption.placement = getOption("xtable.caption.placement", "top")
+  )
+  
+  output$mintime <- renderTable({
+    time() %>%
+      filter(Time == min(Time)) %>%
+      select(price, via, totaltime)
+  },
+  caption = "The best estimated flight time:",
+  caption.placement = getOption("xtable.caption.placement", "top"))
+  
+  output$maxtime <- renderTable({
+    time() %>%
+      filter(Time == max(Time)) %>%
+      select(price, via, totaltime)
+  },
+  caption = "The slowest estimated flight time:",
+  caption.placement = getOption("xtable.caption.placement", "top"))
 } #server
 
 
