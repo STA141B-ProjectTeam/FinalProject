@@ -99,6 +99,9 @@ server <- function(input, output) {
       #otherwise round trip
       {flight_call(input$origin,input$dest,input$date1,input$date2)}
     })
+    #isolate ({dAtemp<-dataAmadeus()})
+    #dA<-dAtemp
+    #save(dA, file = "dA.Rdata")
   }
   
   
@@ -130,6 +133,7 @@ server <- function(input, output) {
     }else{
       req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",origin,
                 "&destination=",destination,"&departureDate=",date1,"&returnDate=",date2, sep = "")
+
     }
     
     # Requesting user authorization
@@ -137,47 +141,91 @@ server <- function(input, output) {
               add_headers(Authorization = paste("Bearer ", tkn))
     )
     stop_for_status(rr)
-    json <- content(rr, as = "text")
+    json <- content(rr, as = "text") 
+
     x<-  fromJSON(json) 
-    
     #-------------------
     
-    # Extracting data from response into resdf dataframe
-    # Creating initial dataframe
+    # Extracting relevant flights into resdf dataframe
+    
+    # initialize dataframe
     resdf<- data.frame("price"=.0, "via"="", "totaltime"="", stringsAsFactors=FALSE) 
     
-    length(x$data$offerItems)
-    for (k in 1:length(x$data$offerItems)) {
+    #if this is a oneway flight
+    if(input$return){ 
+      length(x$data$offerItems)
+      for (k in 1:length(x$data$offerItems)) {
 
-      #extracting data from all of the offers  
-      xx=x$data$offerItems[k]
-      xx=as.data.frame(xx)
-      price=xx$price$total
-      departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
-      departs_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
-      arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
-      arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
+        #extracting data from all matching flights  
+        xx=as.data.frame(x$data$offerItems[k])
+        price=xx$price$total
       
-      #total travel time calculation
-      depart = ymd_hms(departs_at[1])
-      arrive =  ymd_hms(tail(arrives_at, n=1))
-      travel_time=as.character( seconds_to_period(as.numeric(arrive-depart,units="secs")))
-      travel_time=word(travel_time, 1, 2)
+        departs <- paste("[",xx$services$segments$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
+        arrives <- paste("[",xx$services$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
       
-      via=paste(departs,collapse=" ")
-      resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
-      response=paste("Travel via",via,"      Price is",price) 
-    }
-    resdf<-resdf[-1,]
-    ordered <- resdf[order(resdf$price),]
-    #as.character(ordered)
+      
+        #departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
+        #arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
+      
+        departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
+        arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
     
+        #total travel time calculation
+        depart = ymd_hms(departs_at[1])
+        arrive =  ymd_hms(tail(arrives_at, n=1))
+        travel_time=as.character( seconds_to_period(as.numeric(arrive-depart,units="secs")))
+        travel_time=word(travel_time, 1, 2)
+      
+        # total price calculation for roundtrip
+      
+        via=paste(departs[-1],collapse=" ") #pulls origin
+        resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
+        response=paste("Travel via",via,"      Price is",price) 
+      }
+      resdf<-resdf[-1,]
+      ordered <- resdf[order(resdf$price),]
     
-  } # end of flight_call()
+    # otherwise calculate round trip  
+    }else{
+      data <- x$data$"0"$offerItems$"0"
+      length(data)
+      for (k in 1:length(data)){
+        
+      #extracting data from all matching flights  
+        xx=as.data.frame(x$data$"0"$offerItems$"0"[k])
+        price=xx$price$total
+        
+        departs <- paste("[",xx$services$"0"$segments$"0"$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
+        arrives <- paste("[",xx$services$"0"$segments$"0"$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
+
+        departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(
+                        xx$services)$"0")$segments)$"0")$flightSegment)$departure)$at
+        arrives_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(as.data.frame(
+                        xx$services)$"0")$segments)$"0")$flightSegment)$arrival)$at
+        
+        # TODO add return trip
+        
+        # Roundtrip calculations
+        #   total travel time calculation
+        depart = ymd_hms(departs_at[1])
+        arrive =  ymd_hms(tail(arrives_at, n=1))
+        travel_time=as.character( seconds_to_period(as.numeric(arrive-depart,units="secs")))
+        travel_time=word(travel_time, 1, 2)
+        
+        #  total price 
+        
+        via=paste(departs[-1],collapse=" ") 
+        resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
+        response=paste("Travel via",via,"      Price is",price) 
+      } # end for
+      resdf<-resdf[-1,]
+      ordered <- resdf[order(resdf$price),]
+    } #end else
+      
+  } #end flight call
+  
   
 
-  
-  
   #
   # Tab Content 
   #
@@ -188,10 +236,11 @@ server <- function(input, output) {
    
   output$text1 <- renderText({if(!input$return)paste("Returning ",dates()[2])})
     
-  if(requestAmadeus) # Where is your data from? Return respective table
+  if(requestAmadeus){ # Where is your data from? Return respective table
     output$table <- renderTable(dataAmadeus())
-  else 
+  }else{ 
     output$table <- renderTable(dA)
+  }
   
   #======= Scatter Plot ================
   
