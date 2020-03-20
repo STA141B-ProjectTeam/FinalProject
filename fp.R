@@ -75,7 +75,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- FALSE
+requestAmadeus <- TRUE
 
 
 #
@@ -247,16 +247,17 @@ server <- function(input, output) {
   #======= Map of Airports ================
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
+
     if(requestAmadeus)
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap = TRUE))%>%
-      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location))
+      addMarkers(data = Longitude_Latitude, label = ~as.character(code), popup = ~as.character(Location))
     else
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap = TRUE)) %>%
-      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location)) 
+      addMarkers(data = Longitude_Latitude, label = ~as.character(code), popup = ~as.character(Location))
     
   })
   
