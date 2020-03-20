@@ -52,18 +52,16 @@ ui <- fluidPage(
       # Tab Conditions: Name and Content for each tab
       #    See TAB CONTENT below, we're plucking those output variables and using them here. 
       tabsetPanel(
-        tabPanel("Results Table", tableOutput("table")),
+        tabPanel("Best Offers",column(4,tableOutput("offersprice")),column(6, tableOutput("mintime"), tableOutput("maxtime"))),
+        tabPanel("All Flights", tableOutput("table")),
+        tabPanel("Airport Map",leafletOutput("Map")),
         tabPanel("Flight Time v Price", plotOutput("flightPriceScatterPlot"),verbatimTextOutput("summaryONE")),
-        tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO")),
-        tabPanel("Map of Airports",leafletOutput("Map")),
-        tabPanel("Best Offers",column(4,tableOutput("offersprice")),column(6, tableOutput("mintime"), tableOutput("maxtime")))
-        
-        
-        
+        tabPanel("Price Distribution",plotOutput("priceHistoPlot"),verbatimTextOutput("summaryTWO"))
+       
       ) #tabsetPanel
     ) #mainPanel
   ) #sidebarLayout
-) #fluidPage
+) #ui
 
 
 
@@ -76,7 +74,7 @@ ui <- fluidPage(
 #    set requestAmadeus to TRUE for online requests
 
 load(file = "dA.Rdata")  # if request False, local data (static table)
-requestAmadeus <- FALSE
+requestAmadeus <- TRUE
 
 
 #
@@ -84,7 +82,6 @@ requestAmadeus <- FALSE
 #
 
 server <- function(input, output) {
-  
   
   #
   # User Inputs Setup: 
@@ -94,13 +91,16 @@ server <- function(input, output) {
   
   #
   # Checking if accessing Amadeus is required and preparing data 
-  #if(is.null(dA) | requestAmadeus ){
   if(requestAmadeus ){
-    dataAmadeus <-reactive({ doit(input$origin,input$dest,input$date1)})
-    #isolate ({dAtemp<-dataAmadeus()})
-    #dA<-dAtemp
-    #save(dA, file = "dA.Rdata")
+    dataAmadeus <-reactive(if(input$return){ 
+      #if one-way
+      {flight_call(input$origin,input$dest,input$date1)}
+    }else{
+      #otherwise round trip
+      {flight_call(input$origin,input$dest,input$date1,input$date2)}
+    })
   }
+  
   
   # 
   # If one-way flight gray out return date
@@ -115,7 +115,7 @@ server <- function(input, output) {
   
   #
   # Establishing connection, getting response, parsing response 
-  doit<- function (origin, destination, date) {
+  flight_call<- function (origin, destination, date1, date2=NULL) {
     
     # Requesting access token
     headers = c('Content-Type' = 'application/x-www-form-urlencoded')
@@ -124,19 +124,21 @@ server <- function(input, output) {
     tkn<-fromJSON(json)$access_token
     
     # Creating data request
-    # req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",input$origin,"&destination=",input$dest,"&departureDate=",input$date1, sep = "")
-    req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",origin,"&destination=",destination,"&departureDate=",date, sep = "")
+    if(input$return){ 
+      #if one-way omit return information
+      req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",origin,"&destination=",destination,"&departureDate=",date1, sep = "")
+    }else{
+      req=paste("https://test.api.amadeus.com/v1/shopping/flight-offers?origin=",origin,
+                "&destination=",destination,"&departureDate=",date1,"&returnDate=",date2, sep = "")
+    }
     
-    # Get cheapest date       
-    #req="https://test.api.amadeus.com/v1/shopping/flight-dates?origin=MAD&destination=MUC"
-    
-    # Requesting data
+    # Requesting user authorization
     rr <- GET(req,
               add_headers(Authorization = paste("Bearer ", tkn))
     )
     stop_for_status(rr)
     json <- content(rr, as = "text")
-    x<-  fromJSON(json) #x1=x$data$offerItems[1];y=as.data.frame(x1)
+    x<-  fromJSON(json) 
     
     #-------------------
     
@@ -146,7 +148,7 @@ server <- function(input, output) {
     
     length(x$data$offerItems)
     for (k in 1:length(x$data$offerItems)) {
-      
+
       #extracting data from all of the offers  
       xx=x$data$offerItems[k]
       xx=as.data.frame(xx)
@@ -162,7 +164,6 @@ server <- function(input, output) {
       travel_time=as.character( seconds_to_period(as.numeric(arrive-depart,units="secs")))
       travel_time=word(travel_time, 1, 2)
       
-      
       via=paste(departs,collapse=" ")
       resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
       response=paste("Travel via",via,"      Price is",price) 
@@ -172,27 +173,21 @@ server <- function(input, output) {
     #as.character(ordered)
     
     
-  } # end of doit()
+  } # end of flight_call()
   
-  #
-  # Data Outputs
-  #
+
   
-  # output$text<-renderText(paste("From ",input$origin," to",input$dest,unlist(doit(input$origin,input$dest))))
-  output$text<-renderText(paste("From ",input$origin," to",input$dest, "on the date of ", dates()[1] ))
-  output$text1 <- renderText({if(!input$return)"not implemented"})
-  #output$table <- renderTable(doit(input$origin,input$dest,input$date1))   
-  
-  # t=doit("SMF","JFK","2020-03-01")
-  # t$price
-  # output$table <- renderTable(t)
   
   #
   # Tab Content 
   #
   
   #======= Main Tab - TABLE ================
-  
+ 
+  output$text<-renderText(paste("From ",input$origin," to",input$dest, "on the date of ", dates()[1] ))
+   
+  output$text1 <- renderText({if(!input$return)paste("Returning ",dates()[2])})
+    
   if(requestAmadeus) # Where is your data from? Return respective table
     output$table <- renderTable(dataAmadeus())
   else 
@@ -201,8 +196,6 @@ server <- function(input, output) {
   #======= Scatter Plot ================
   
   output$flightPriceScatterPlot <- renderPlot({
-    #--  t=doit(input$origin,input$dest,input$date1)
-    #qplot(y=t$price,x=as.numeric(hm(t$totaltime))/3600,xlab ="flight time (hours)", ylab = "price")
     if (requestAmadeus)
       qplot(y=dataAmadeus()$price,
             x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
@@ -246,21 +239,23 @@ server <- function(input, output) {
   
   
   #======= Map of Airports ================
+  
   Longitude_Latitude <- read_csv("Longitude_Latitude.csv")
   output$Map <- renderLeaflet({
     if(requestAmadeus)
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = providerTileOptions(noWrap = TRUE))%>%
+                       options = providerTileOptions(noWrap =TRUE))%>%
       addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location))
     else
       leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap = TRUE)) %>%
-      addMarkers(data = Longitude_Latitude,popup = ~as.character(code), label = ~as.character(Location)) 
+      addMarkers(data = Longitude_Latitude, label = ~as.character(Location)) #popup = ~as.character(code),
     
-  })
+  }) #render map
   
+
   #======= Best Offer ================
   minprice <- reactive({
     if (requestAmadeus)
@@ -288,7 +283,7 @@ server <- function(input, output) {
       filter(Time == min(Time)) %>%
       select(price, via, totaltime)
   },
-  caption = "The fastest flight time:",
+  caption = "The best estimated flight time:",
   caption.placement = getOption("xtable.caption.placement", "top"))
   
   output$maxtime <- renderTable({
@@ -296,7 +291,7 @@ server <- function(input, output) {
       filter(Time == max(Time)) %>%
       select(price, via, totaltime)
   },
-  caption = "The maximum flight time:",
+  caption = "The slowest estimated flight time:",
   caption.placement = getOption("xtable.caption.placement", "top"))
 } #server
 
