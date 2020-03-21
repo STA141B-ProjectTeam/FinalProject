@@ -9,6 +9,8 @@ library(httr)
 library(ggplot2)
 library(leaflet)
 library(magrittr)
+library(rsconnect)
+
 
 #
 # Airport Data
@@ -154,9 +156,8 @@ server <- function(input, output) {
         xx=as.data.frame(x$data$offerItems[k])
         price=xx$price$total
       
-        departs <- paste("[",xx$services$segments$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-        arrives <- paste("[",xx$services$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-      
+        departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
+        arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
         departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
         arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
     
@@ -185,9 +186,8 @@ server <- function(input, output) {
         price=xx$price$total
         
         for (j in 0:1)
-          departs <- paste("[",xx$services[j]$segments$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-          arrives <- paste("[",xx$services[j]$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-        
+          departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments[j])$flightSegment)$departure)$iataCode
+          arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments[j])$flightSegment)$arrival)$iataCode        
         
         departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
         arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
