@@ -5,7 +5,7 @@ This application retrives actual flight prices and corresponding data from one o
 
 Prototyping. Testing. Deployment
 
-Initial prototype is available at https://sta141b.shinyapps.io/FinalPro/
+Prototype is available at https://jeslacourse.shinyapps.io/141BFinalProject/
 Project deliverables include source code repository, documentation, and working copies of the application available on the web. The copies of the application have to be deployed on shinyapps.io as per the requirements. Due to the limitations of Amadeus test API and other resources, testing of the application is limited to ad-hoc method. Each team member is supposed to deploy their own copy of the application.  
 
 Amadeus API
