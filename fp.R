@@ -69,11 +69,7 @@ ui <- fluidPage(
 # Data Access
 #
 
-#SETUP README: Do you want to use online Amadeus data or just stored data dA.Rdata from earlier request?
-#    set requestAmadeus to FALSE if you want to requests to Amadeus (for testing purposes)
-#    set requestAmadeus to TRUE for online requests
-
-load(file = "dA.Rdata")  # if request False, local data (static table)
+# IF TRUE: Calling API
 requestAmadeus <- TRUE
 
 
@@ -91,7 +87,7 @@ server <- function(input, output) {
   
   #
   # Checking if accessing Amadeus is required and preparing data 
-  if(requestAmadeus ){
+  if(requestAmadeus){
     dataAmadeus <-reactive(if(input$return){ 
       #if one-way
       {flight_call(input$origin,input$dest,input$date1)}
@@ -99,9 +95,7 @@ server <- function(input, output) {
       #otherwise round trip
       {flight_call(input$origin,input$dest,input$date1,input$date2)}
     })
-    #isolate ({dAtemp<-dataAmadeus()})
-    #dA<-dAtemp
-    #save(dA, file = "dA.Rdata")
+   
   }
   
   
@@ -156,16 +150,12 @@ server <- function(input, output) {
       length(x$data$offerItems)
       for (k in 1:length(x$data$offerItems)) {
 
-        #extracting data from all matching flights  
+        #extracting data from all matching flights, create variable  
         xx=as.data.frame(x$data$offerItems[k])
         price=xx$price$total
       
         departs <- paste("[",xx$services$segments$flightSegment$departure$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
         arrives <- paste("[",xx$services$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
-      
-      
-        #departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
-        #arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
       
         departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
         arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
@@ -177,7 +167,6 @@ server <- function(input, output) {
         travel_time=word(travel_time, 1, 2)
       
         # total price calculation for roundtrip
-      
         via=paste(departs[-1],collapse=" ") #pulls origin
         resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
         response=paste("Travel via",via,"      Price is",price) 
@@ -200,9 +189,6 @@ server <- function(input, output) {
           arrives <- paste("[",xx$services[j]$segments$flightSegment$arrival$iataCode, "]", collapse =",")%>% fromJSON(flatten=TRUE)
         
         
-        #departs=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$iataCode
-        #arrives=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$iataCode
-        
         departs_at <- as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$departure)$at
         arrives_at=as.data.frame(as.data.frame(as.data.frame(as.data.frame(xx$services)$segments)$flightSegment)$arrival)$at
         
@@ -215,10 +201,11 @@ server <- function(input, output) {
         
         #  total price 
         
-        via=paste(departs[-1],collapse=" ") 
+        via= paste(departs[-1],collapse=" ") 
         resdf=rbind(resdf,list(as.numeric(price),via,travel_time))
         response=paste("Travel via",via,"      Price is",price) 
       } # end for
+      
       resdf<-resdf[-1,]
       ordered <- resdf[order(resdf$price),]
     } #end else
@@ -233,35 +220,25 @@ server <- function(input, output) {
   
   #======= Main Tab - TABLE ================
  
+  # descriptive text above table
   output$text<-renderText(paste("From ",input$origin," to",input$dest, "on the date of ", dates()[1] ))
-   
   output$text1 <- renderText({if(!input$return)paste("Returning ",dates()[2])})
     
-  if(requestAmadeus){ # Where is your data from? Return respective table
-    output$table <- renderTable(dataAmadeus())
-  }else{ 
-    output$table <- renderTable(dA)
-  }
+  # all results table
+  output$table <- renderTable(dataAmadeus())
+  
   
   #======= Scatter Plot ================
   
+  # create scatter plot
   output$flightPriceScatterPlot <- renderPlot({
-    if (requestAmadeus)
       qplot(y=dataAmadeus()$price,
             x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
-            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200)) + 
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price") + 
       theme_minimal() +
       geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
       geom_smooth(method=lm,se=FALSE)
-    else 
-      qplot(y=dA$price,
-            x=as.numeric(hm(dA$totaltime))/3600,
-            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200))+ 
-      theme_minimal() +
-      geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
-      geom_smooth(method=lm,se=FALSE)
-    
-    
+
   }) #renderPlot
   
   #=====Scatter Plot Summary Statistics======
@@ -270,21 +247,15 @@ server <- function(input, output) {
   #======= Histogram ================
   
   output$priceHistoPlot <- renderPlot({
-    if (requestAmadeus)
-      hist(dataAmadeus()$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
+    hist(dataAmadeus()$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
            breaks = 100,ylim =c(0,20))
-    else 
-      hist(dA$price,xlab = "Price (US Dollars)",ylab="Frequency",main="Price of Flights",col = 'skyblue3',
-           breaks = 500,ylim =c(0,20))  
   }) #renderPlot
   
   #=====Histogram Summary Statistics=======
   
   output$summaryTWO<-renderPrint({
-    if(requestAmadeus)
       summary(dataAmadeus()$price)
-    else
-      summary(dA$price)
+
   })
   
   
@@ -295,36 +266,21 @@ server <- function(input, output) {
     loc <- Longitude_Latitude %>%
       filter(code == input$origin | code == input$dest)
     
-    if(requestAmadeus)
-      
-      
-      leaflet() %>%
+   leaflet() %>%
       addProviderTiles(providers$Esri.NatGeoWorldMap,
                        options = providerTileOptions(noWrap =TRUE))%>%
       addMarkers(data = loc, label = ~as.character(code), popup = ~as.character(Location))
-    else
-      leaflet() %>%
-      addProviderTiles(providers$Esri.NatGeoWorldMap,
-                       options = providerTileOptions(noWrap = TRUE)) %>%
-      addMarkers(data = loc, label = ~as.character(code), popup = ~as.character(Location))
-    
-  }) #render map
+    }) #render map
   
 
   #======= Best Offer ================
   minprice <- reactive({
-    if (requestAmadeus)
       dataAmadeus() %>% filter(price == min(dataAmadeus()$price))
-    else
-      dA %>% filter(price == min(dA$price))
   })
+  
   time <- reactive({
-    if (requestAmadeus)
       dataAmadeus() %>%
          mutate(Time = as.numeric(duration(dataAmadeus()$totaltime)))
-    else
-      dA %>% 
-        mutate(Time = as.numeric(duration(dA$totaltime)))
   })
   
   output$offersprice <- renderTable(
@@ -350,6 +306,8 @@ server <- function(input, output) {
   },
   caption = "The slowest estimated flight time:",
   caption.placement = getOption("xtable.caption.placement", "top"))
+
+  
 } #server
 
 
