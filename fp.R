@@ -249,7 +249,7 @@ server <- function(input, output) {
     if (requestAmadeus)
       qplot(y=dataAmadeus()$price,
             x=as.numeric(hm(dataAmadeus()$totaltime))/3600,
-            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price",ylim = c(100,200)) + 
+            xlab ="Flight Time (hours)", ylab = "Price (US Dollars)",main = "Flight Time vs Price") + 
       theme_minimal() +
       geom_point(shape = 23, fill = "lightgray",color = "black", size = 5) + 
       geom_smooth(method=lm,se=FALSE)
